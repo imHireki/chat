@@ -3,6 +3,8 @@ import json
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth import get_user_model
+from apps.chat import tasks
+from apps.chat.models import Room
 
 
 class ChatConsumer(WebsocketConsumer):
@@ -14,6 +16,10 @@ class ChatConsumer(WebsocketConsumer):
 
         # Get the room name from the URL
         self.room_name = self.scope['url_route']['kwargs']['room_name']
+        self.room_id = tasks.get_or_create_room.delay(self.room_name).get()
+        self.db_room = Room.objects.get(id=self.room_id)
+
+        self.db_user = self.scope['user']
 
         # Create the group name using the room name.
         self.room_group_name = f'chat_{self.room_name}'
@@ -23,7 +29,15 @@ class ChatConsumer(WebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+        # Send an event to a group.
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                "type": "previous_chat_messages",  # The name of the method.
+            }
+        )
         self.accept()
+
 
     def disconnect(self, close_code):
         """Leave the room."""
@@ -49,6 +63,15 @@ class ChatConsumer(WebsocketConsumer):
             }
         )
 
+    def previous_chat_messages(self, event):
+        messages = tasks.get_room_messages.delay(self.room_id).get()
+
+        for username, message in messages:
+            self.send(text_data=json.dumps({
+                "username": username,
+                "message": message,
+            }))
+
     def chat_message(self, event):
         """Send the message to the WebSocket as an event.
         Method to handle an event.
@@ -60,3 +83,8 @@ class ChatConsumer(WebsocketConsumer):
             "username": username,
             "message": message,
         }))
+        message = tasks.message_to_db(
+            user=self.db_user,
+            room=self.db_room,
+            message=message
+        )

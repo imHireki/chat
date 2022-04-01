@@ -8,7 +8,6 @@ CASCADE = models.CASCADE
 
 class Room(models.Model):
     name = models.CharField(max_length=30)
-    slug = models.SlugField()
 
 
 class Message(models.Model):
