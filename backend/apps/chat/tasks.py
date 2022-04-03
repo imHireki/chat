@@ -1,4 +1,5 @@
 from celery import shared_task
+
 from apps.chat.models import Room, Message
 
 
@@ -13,9 +14,9 @@ def get_or_create_room(room_name) -> int:
     return room_object.id
 
 @shared_task
-def get_room_messages(room):
+def get_room_messages(room_id):
     room_message_objs = Message.objects.filter(
-        room=room
+        room__id=room_id
     )
     return [(msg.user.username, msg.content) for msg in room_message_objs]
 
@@ -28,3 +29,4 @@ def message_to_db(user, room, message):
     )
     message.save()
     return message.id
+
