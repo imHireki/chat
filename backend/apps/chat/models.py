@@ -13,7 +13,7 @@ class Room(models.Model):
 class Message(models.Model):
     user = models.ForeignKey(User, on_delete=CASCADE)
     room = models.ForeignKey(Room, on_delete=CASCADE)
-    content = models.CharField(max_length=255)
+    content = models.CharField(max_length=255, blank=False, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
