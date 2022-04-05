@@ -8,13 +8,9 @@ from celery import shared_task
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
-app = Celery(
-    main='core',
-    broker='amqp://guest:guest@localhost:5672/',
-    backend='redis://127.0.0.1:6379'
-)
+app = Celery(main='core')
 
-app.config_from_object(obj='django.conf:settings', namespace='CELERY')
+app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()  # Load task modules from django apps.
 
 app.conf.beat_schedule = {
@@ -25,7 +21,7 @@ app.conf.beat_schedule = {
     },
     'sunday': {
         'task': 'apps.chat.tasks.test',
-        'schedule': crontab(day_of_week='sunday'),
+        'schedule': crontab(day_of_week='wednesday'),
         'args': ('sunday!', ),
     }
 }

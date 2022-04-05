@@ -1,0 +1,36 @@
+services:
+  django:
+    build: .
+    image: chat_django
+    container_name: chat_django
+    command: python3 manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/usr/src/app/
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    depends_on:
+      - celery
+  celery:
+    build: .
+    image: chat_celery
+    container_name: chat_celery
+    command: celery -A core worker -B -E -l INFO
+    volumes:
+      - .:/usr/src/app/
+    depends_on:
+      - rabbitmq
+      - redis
+    env_file:
+      - ./.env
+  redis:
+    image: redis
+    container_name: chat_redis
+    volumes:
+      - ~/db/chat_redis:/data
+  rabbitmq:
+    image: rabbitmq
+    container_name: chat_rabbitmq
+    env_file:
+      - ./.env
